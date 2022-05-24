@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  haproxy:
+    image: haproxy:2.5-alpine
+    working_dir: /haproxy
+    environment:
+      - "BACKEND_SOCKET_ADDRESS=/sockets/backend.sock"
+      - "SPOA_SOCKET_ADDRESS=/sockets/spoa.sock"
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      - ./mirror.conf:/haproxy/mirror.conf
+      - ./sockets:/sockets
+
+  backend:
+    build: .
+    command: backend
+    environment:
+      - "SOCKET_ADDRESS=/sockets/backend.sock"
+    volumes:
+      - ./sockets:/sockets
+
+  spoa:
+    build: .
+    command: ["spoa", "/sockets/spoa.sock", "dest"]
+    environment:
+      - "SOCKET_ADDRESS=/sockets/spoa.sock"
+      - "DEST_ADDRESS=dest"
+    volumes:
+      - ./sockets:/sockets
+
+  dest:
+    build: .
+    command: ["dest"]
+    environment:
+      - "ADDRESS=0.0.0.0:80"
